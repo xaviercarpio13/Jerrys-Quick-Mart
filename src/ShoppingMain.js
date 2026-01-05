@@ -2,6 +2,9 @@ const path = require('path');
 const { parseProductFile } = require('../utils/IOParser');
 const Item = require('./Models/Item');
 const Catalog = require('./Models/Catalog');
+const RegularCustomer = require('./Models/RegularCustomer');
+const RewardsMember = require('./Models/RewardsCustomer');
+
 
 // Build the path to data/inventory.txt
 const inventoryPath = path.join(__dirname, '..', 'data', 'inventory.txt');
@@ -31,6 +34,7 @@ items.forEach((item, index) => {
     );
 });
 
+const customer = new RegularCustomer('Alice', new Date());
 const catalog = new Catalog(items);
 
-catalog.printCatalog();
+catalog.printCatalog(customer);

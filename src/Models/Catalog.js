@@ -1,28 +1,37 @@
+const RegularCustomer = require('./RegularCustomer');
+const RewardsMember = require('./RewardsCustomer');
+
 class Catalog {
     constructor(items = []) {
-        this.items = items; // List<Item>
+        this.items = items;
     }
 
-    updateCatalog(newItems) {
+ updateCatalog(newItems) {
         if (!Array.isArray(newItems)) return false;
         this.items = newItems;
         return true;
     }
 
-    printCatalog() {
-        console.log('=== Catalog ===');
+
+    printCatalog(customer) {
+        console.log(`=== Catalog for ${customer.name} ===`);
 
         this.items.forEach((item, index) => {
+            let price;
+
+            if (customer instanceof RewardsMember) {
+                price = item.memberPrice;
+            } else if (customer instanceof RegularCustomer) {
+                price = item.regularPrice;
+            }
+
             console.log(
-                `${index + 1}. ${item.name} | Qty: ${item.quantity} | ` +
-                `Regular: $${item.regularPrice.toFixed(2)} | ` +
-                `Rewards: $${item.memberPrice.toFixed(2)} | ` +
-                `Taxable: ${item.taxStatus}`
+                `${index + 1}. ${item.name} | Stock: ${item.quantity} | ` +
+                `Price: $${price.toFixed(2)}`
             );
         });
-
-        console.log(`\nTotal catalog items: ${this.items.length}`);
     }
 }
 
 module.exports = Catalog;
+
