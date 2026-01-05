@@ -1,6 +1,7 @@
 const path = require('path');
 const { parseProductFile } = require('../utils/IOParser');
 const Item = require('./Models/Item');
+const Catalog = require('./Models/Catalog');
 
 // Build the path to data/inventory.txt
 const inventoryPath = path.join(__dirname, '..', 'data', 'inventory.txt');
@@ -30,4 +31,6 @@ items.forEach((item, index) => {
     );
 });
 
-console.log(`\nTotal items: ${items.length}`);
+const catalog = new Catalog(items);
+
+catalog.printCatalog();
