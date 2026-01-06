@@ -39,6 +39,7 @@ function onAdd(e) {
   if (inCart) inCart.quantity += 1;
   else cart.push({ name: p.name, quantity: 1, unitPrice: price, taxStatus: p.taxStatus });
   renderCartCount();
+  showToast(`${p.name} added to cart`);
 }
 
 function renderCartCount() {
@@ -51,10 +52,38 @@ function showCart() {
   rows.innerHTML = '';
   cart.forEach(it => {
     const r = document.createElement('div'); r.className = 'row';
-    r.innerHTML = `<div>${it.name} x${it.quantity}</div><div>$${(it.unitPrice*it.quantity).toFixed(2)}</div>`;
+    r.innerHTML = `<div>${it.name} x${it.quantity}</div><div>$${(it.unitPrice*it.quantity).toFixed(2)} <button class="remove" data-name="${it.name}">Remove</button></div>`;
     rows.appendChild(r);
   });
   document.getElementById('cart-subtotal').textContent = cart.reduce((s,i)=> s + i.unitPrice*i.quantity,0).toFixed(2);
+  // attach remove handlers
+  rows.querySelectorAll('.remove').forEach(btn => btn.addEventListener('click', (ev)=>{
+    const name = ev.currentTarget.dataset.name;
+    removeFromCart(name);
+  }));
+}
+
+function removeFromCart(name) {
+  cart = cart.filter(i => i.name !== name);
+  renderCartCount();
+  showCart();
+  showToast(`${name} removed from cart`);
+}
+
+function emptyCart() {
+  if (cart.length === 0) { showToast('Cart is already empty'); return; }
+  cart = [];
+  renderCartCount();
+  showCart();
+  showToast('Cart emptied');
+}
+
+function showToast(msg, timeout = 1800) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.remove('hidden');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=> t.classList.add('hidden'), timeout);
 }
 
 function checkout() {
@@ -121,6 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementsByName('customer').forEach(inp => inp.addEventListener('change', e=>{ customerType = e.target.value; renderCatalog(); }));
   document.getElementById('view-cart').addEventListener('click', showCart);
   document.getElementById('close-cart').addEventListener('click', ()=>document.getElementById('cart-panel').classList.add('hidden'));
+  document.getElementById('empty-cart').addEventListener('click', emptyCart);
   document.getElementById('close-receipt').addEventListener('click', ()=>document.getElementById('receipt-panel').classList.add('hidden'));
   document.getElementById('checkout').addEventListener('click', checkout);
   document.getElementById('pay-now').addEventListener('click', finalizePayment);
