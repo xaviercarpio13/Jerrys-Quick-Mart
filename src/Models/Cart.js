@@ -8,7 +8,8 @@ class Cart {
             const item = arguments[0];
             const quantity = arguments[1] || 1;
             const unitPrice = arguments[2] || null;
-            this.addItem(item, quantity, unitPrice);
+            const regularPrice = arguments[3] || null;
+            this.addItem(item, quantity, unitPrice, regularPrice);
         }
     }
 
@@ -32,21 +33,18 @@ class Cart {
         return Cart._instance;
     }
 
-    addItem(item, quantity = 1, unitPrice = null) {
+    addItem(item, quantity = 1, unitPrice = null, regularPrice = null) {
         if (!item) return false;
-        // validate stock if the item carries a quantity field
         const available = typeof item.quantity === 'number' ? item.quantity : Infinity;
         if (available < quantity) return false;
-
         const existing = this.items.find(li => li.item.name === item.name);
         if (existing) {
-            // check combined quantity against stock
             const combined = existing.quantity + Number(quantity);
             if (combined > available) return false;
             existing.quantity = combined;
             return true;
         }
-        const li = new LineItem(item, quantity, unitPrice);
+        const li = new LineItem(item, quantity, unitPrice, regularPrice);
         this.items.push(li);
         return true;
     }

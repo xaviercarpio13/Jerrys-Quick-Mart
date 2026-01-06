@@ -1,11 +1,12 @@
 class Receipt {
-    constructor(lineItems = [], cash=0) {
+    constructor(lineItems = [], cash = 0) {
         this.lineItems = lineItems.map(li => ({
             name: li.item.name,
             quantity: li.quantity,
             unitPrice: li.unitPrice,
             subtotal: Number((li.unitPrice * li.quantity) || 0),
-            taxStatus: li.item.taxStatus
+            taxStatus: li.item.taxStatus,
+            regularPrice: li.regularPrice || null
         }));
         this.taxRate = 0.065; // 6.5% per requirement
         this.date = new Date();
@@ -72,6 +73,16 @@ class Receipt {
         lines.push(`Total: $${total.toFixed(2)}`);
         lines.push(`Cash: $${this.cash.toFixed(2)}`);
         lines.push(`Change: $${(this.cash - total).toFixed(2)}`);
+        let totalSaved = 0;
+        this.lineItems.forEach(it => {
+            if (it.regularPrice === null) {
+                totalSaved = 0;
+            } else{
+                totalSaved += (it.regularPrice - it.unitPrice) * it.quantity;
+            }
+        });
+        lines.push(`You saved: $${totalSaved.toFixed(2)}`);
+
         return lines.join('\n');
     }
 }

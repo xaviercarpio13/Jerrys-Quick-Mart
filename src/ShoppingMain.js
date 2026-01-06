@@ -57,7 +57,7 @@ const cartInstance = Cart.getInstance();
 purchase(0, 1); // Milk
 purchase(5, 1); // Shampoo
 purchase(6, 2); // Deodorant
-const receipt = cartInstance.goToCheckout(11);
+const receipt = cartInstance.goToCheckout(20);
 console.log('\n========================');
 if(receipt==null){
     console.log("Insufficient cash provided. Transaction cancelled!");
@@ -69,12 +69,20 @@ updateAndReloadStock(cartInstance.items, items);
 
 function purchase(itemIndex, qty) {
     const product = catalog.items[itemIndex];
+    let success = false;
     if (!product) {
         console.log(`Purchase failed: invalid product index ${itemIndex}`);
         return false;
     }
     // Delegate stock validation to Cart.addItem (single source of truth)
-    const success = cartInstance.addItem(product, qty, product.regularPrice);
+    if (customer instanceof RewardsMember ){
+        success = cartInstance.addItem(product, qty, product.memberPrice,product.regularPrice);
+    }
+
+    if (customer instanceof RegularCustomer){
+        success = cartInstance.addItem(product, qty, product.regularPrice);
+    }
+    
     if (success) {
         // reserve stock in master catalog
         const available = typeof product.quantity === 'number' ? product.quantity : 0;

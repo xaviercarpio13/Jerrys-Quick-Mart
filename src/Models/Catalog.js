@@ -24,7 +24,10 @@ class Catalog {
                 price = item.memberPrice;
             } else if (customer instanceof RegularCustomer) {
                 price = item.regularPrice;
-            } 
+            } else {
+                throw new Error('Unknown customer type');
+            }
+
             return {
                 name: item.name,
                 quantity: item.quantity,
