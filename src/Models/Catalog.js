@@ -6,32 +6,33 @@ class Catalog {
         this.items = items;
     }
 
- updateCatalog(newItems) {
+    updateCatalog(newItems) {
         if (!Array.isArray(newItems)) return false;
         this.items = newItems;
         return true;
     }
 
+    getCatalogForCustomer(customer) {
+        if (!customer) {
+            throw new Error('Customer must be provided');
+        }
 
-    printCatalog(customer) {
-        console.log(`=== Catalog for ${customer.name} ===`);
-
-        this.items.forEach((item, index) => {
+        return this.items.map(item => {
             let price;
 
             if (customer instanceof RewardsMember) {
                 price = item.memberPrice;
             } else if (customer instanceof RegularCustomer) {
                 price = item.regularPrice;
-            }
-
-            console.log(
-                `${index + 1}. ${item.name} | Stock: ${item.quantity} | ` +
-                `Price: $${price.toFixed(2)}`
-            );
+            } 
+            return {
+                name: item.name,
+                quantity: item.quantity,
+                price: price,
+                taxStatus: item.taxStatus
+            };
         });
     }
 }
 
 module.exports = Catalog;
-
