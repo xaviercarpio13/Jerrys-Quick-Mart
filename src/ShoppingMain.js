@@ -49,25 +49,20 @@ customerCatalog.forEach((item, index) => {
     );
 });
 
-// ========== SIMULATION OF PURCHASE ===============
-
 
 // ========== SIMULATION OF PURCHASES ===============
-// Workflow: create Cart with first raw item; subsequent purchases reuse singleton Cart
-// Create cart (singleton) with first item
-const cart = Cart.getInstance(); //
 
+console.log('\n========================');
+const cartInstance = Cart.getInstance();
 purchase(0, 1); // Milk
 purchase(5, 1); // Shampoo
 purchase(6, 2); // Deodorant
-
-
-const cartInstance = Cart.getInstance();
-console.log('\n=== Cart Summary ===');
-console.log(`Subtotal (no tax): $${cartInstance.calculateSubtotal().toFixed(2)}`);
-
-
-const receipt = cartInstance.goToCheckout();
+const receipt = cartInstance.goToCheckout(11);
+console.log('\n========================');
+if(receipt==null){
+    console.log("Insufficient cash provided. Transaction cancelled!");
+    return
+} 
 console.log('\n' + receipt.generateReceipt());
 
 updateAndReloadStock(cartInstance.items, items);
@@ -79,7 +74,7 @@ function purchase(itemIndex, qty) {
         return false;
     }
     // Delegate stock validation to Cart.addItem (single source of truth)
-    const success = cart.addItem(product, qty, product.regularPrice);
+    const success = cartInstance.addItem(product, qty, product.regularPrice);
     if (success) {
         // reserve stock in master catalog
         const available = typeof product.quantity === 'number' ? product.quantity : 0;

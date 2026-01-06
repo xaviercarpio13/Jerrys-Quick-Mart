@@ -54,5 +54,24 @@ function updateTxtFile(filePath, products) {
     }
 }
 
-module.exports = { parseProductFile, updateTxtFile };
+function printIntoTxt (receiptContent, transId, date) {
+    try {
+        // Format: transaction_000001_12082016.txt
+        const dateStr = date.toLocaleDateString('en-GB').replace(/\//g, ''); // DDMMYYYY
+        const fileName = `transaction_${transId}_${dateStr}.txt`;
+        const filePath = path.join(__dirname, '..', '..', 'receipts', fileName);
 
+        // Ensure receipts folder exists
+        if (!fs.existsSync(path.dirname(filePath))) {
+            fs.mkdirSync(path.dirname(filePath), { recursive: true });
+        }
+
+        fs.writeFileSync(filePath, receiptContent, 'utf8');
+        return fileName;
+    } catch (err) {
+        console.error("Failed to save receipt file:", err);
+        return null;
+    }
+};
+
+module.exports = { parseProductFile, updateTxtFile, printIntoTxt };

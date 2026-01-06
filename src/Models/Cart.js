@@ -1,4 +1,5 @@
 const LineItem = require('./LineItem');
+const Receipt = require('./Receipt');
 
 class Cart {
     constructor() {
@@ -66,9 +67,21 @@ class Cart {
         return this.items.reduce((sum, li) => sum + li.subtotal(), 0);
     }
 
-    goToCheckout(customer = null) {
-        const Receipt = require('./Receipt');
-        return new Receipt(this.items.slice(), customer);
+    goToCheckout(cash) {
+        // If no cash provided, return a receipt preview (no side-effects)
+        if (cash === undefined || cash === null) {
+            return new Receipt(this.items.slice(), cash);
+        }
+        const cashNum = Number(cash);
+        const receipt = new Receipt(this.items.slice(), cashNum);
+        const total = receipt.calculateTotal();
+        // Validate cash
+        if (cashNum >= total) {
+            this.items = []; // clear cart
+            return receipt;
+        }
+        // insufficient cash
+        return null;
     }
 }
 
