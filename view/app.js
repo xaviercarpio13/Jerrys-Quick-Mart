@@ -16,10 +16,14 @@ function renderCatalog() {
     const el = document.createElement('div');
     el.className = 'card';
     const price = customerType === 'rewards' ? p.memberPrice : p.regularPrice;
+    // include quantity input so user can choose how many to add
     el.innerHTML = `<h3>${p.name}</h3>
       <div class="meta">Stock: ${p.quantity}</div>
       <div class="price">$${price.toFixed(2)}</div>
-      <div style="margin-top:10px"><button data-idx="${idx}">Add to cart</button></div>`;
+      <div style="margin-top:10px">
+        <label>Qty <input class="qty-input" data-idx="${idx}" type="number" min="1" value="1" style="width:60px;padding:6px;border-radius:6px;border:1px solid #e6eef8" /></label>
+        <button data-idx="${idx}">Add to cart</button>
+      </div>`;
     container.appendChild(el);
   });
   container.querySelectorAll('button').forEach(btn => btn.addEventListener('click', onAdd));
@@ -29,21 +33,32 @@ function onAdd(e) {
   const idx = Number(e.currentTarget.dataset.idx);
   const p = products[idx];
   const price = customerType === 'rewards' ? p.memberPrice : p.regularPrice;
+  // read desired qty from input on the same card
+  const container = e.currentTarget.closest('.card');
+  let desired = 1;
+  const qInput = container && container.querySelector('.qty-input');
+  if (qInput) desired = Math.max(1, Number(qInput.value) || 1);
+
   // cart-level stock validation
   const inCart = cart.find(ci => ci.name === p.name);
   const cartQty = inCart ? inCart.quantity : 0;
-  if (cartQty + 1 > p.quantity) {
+  if (cartQty + desired > p.quantity) {
     alert('Not enough stock');
     return;
   }
-  if (inCart) inCart.quantity += 1;
-  else cart.push({ name: p.name, quantity: 1, unitPrice: price, taxStatus: p.taxStatus });
+  if (inCart) inCart.quantity += desired;
+  else cart.push({ name: p.name, quantity: desired, unitPrice: price, taxStatus: p.taxStatus });
   renderCartCount();
   showToast(`${p.name} added to cart`);
 }
 
 function renderCartCount() {
   document.getElementById('cart-count').textContent = cart.reduce((s,i)=> s + i.quantity,0);
+  const checkoutBtn = document.getElementById('checkout');
+  const emptyBtn = document.getElementById('empty-cart');
+  const hasItems = cart.length > 0;
+  if (checkoutBtn) checkoutBtn.disabled = !hasItems;
+  if (emptyBtn) emptyBtn.disabled = !hasItems;
 }
 
 function showCart() {
@@ -52,14 +67,42 @@ function showCart() {
   rows.innerHTML = '';
   cart.forEach(it => {
     const r = document.createElement('div'); r.className = 'row';
-    r.innerHTML = `<div>${it.name} x${it.quantity}</div><div>$${(it.unitPrice*it.quantity).toFixed(2)} <button class="remove" data-name="${it.name}">Remove</button></div>`;
+    r.innerHTML = `<div><strong>${it.name}</strong> <button class="minus" data-name="${it.name}">-</button> <span class="qty" data-name="${it.name}">${it.quantity}</span> <button class="plus" data-name="${it.name}">+</button></div>
+                   <div>$${(it.unitPrice*it.quantity).toFixed(2)} <button class="remove" data-name="${it.name}">Remove</button></div>`;
     rows.appendChild(r);
   });
   document.getElementById('cart-subtotal').textContent = cart.reduce((s,i)=> s + i.unitPrice*i.quantity,0).toFixed(2);
   // attach remove handlers
   rows.querySelectorAll('.remove').forEach(btn => btn.addEventListener('click', (ev)=>{
+    ev.stopPropagation();
     const name = ev.currentTarget.dataset.name;
     removeFromCart(name);
+  }));
+  // attach plus/minus handlers
+  rows.querySelectorAll('.plus').forEach(btn => btn.addEventListener('click', (ev)=>{
+    ev.stopPropagation();
+    const name = ev.currentTarget.dataset.name;
+    const prod = products.find(p=>p.name===name);
+    if (!prod) return showToast('Product not found');
+    const inCart = cart.find(i=>i.name===name);
+    if (!inCart) return;
+    if (inCart.quantity + 1 > prod.quantity) { showToast('Not enough stock'); return; }
+    inCart.quantity += 1;
+    renderCartCount();
+    showCart();
+  }));
+  rows.querySelectorAll('.minus').forEach(btn => btn.addEventListener('click', (ev)=>{
+    ev.stopPropagation();
+    const name = ev.currentTarget.dataset.name;
+    const inCart = cart.find(i=>i.name===name);
+    if (!inCart) return;
+    if (inCart.quantity > 1) {
+      inCart.quantity -= 1;
+      renderCartCount();
+      showCart();
+    } else {
+      removeFromCart(name);
+    }
   }));
 }
 
@@ -147,7 +190,23 @@ function cancelPayment() {
 
 document.addEventListener('DOMContentLoaded', () => {
   loadProducts();
-  document.getElementsByName('customer').forEach(inp => inp.addEventListener('change', e=>{ customerType = e.target.value; renderCatalog(); }));
+  document.getElementsByName('customer').forEach(inp => inp.addEventListener('change', e=>{
+    const newType = e.target.value;
+    if (newType === customerType) return;
+    const previous = customerType;
+    customerType = newType;
+    renderCatalog();
+    if (cart.length > 0) {
+      cart = [];
+      renderCartCount();
+      // hide cart panel in case it is open
+      const panel = document.getElementById('cart-panel');
+      if (panel) panel.classList.add('hidden');
+      showToast(`Customer switched to ${customerType}. Cart was cleared because customer types cannot be mixed.`);
+    } else {
+      showToast(`Customer switched to ${customerType}.`);
+    }
+  }));
   document.getElementById('view-cart').addEventListener('click', showCart);
   document.getElementById('close-cart').addEventListener('click', ()=>document.getElementById('cart-panel').classList.add('hidden'));
   document.getElementById('empty-cart').addEventListener('click', emptyCart);
@@ -155,4 +214,17 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('checkout').addEventListener('click', checkout);
   document.getElementById('pay-now').addEventListener('click', finalizePayment);
   document.getElementById('cancel-pay').addEventListener('click', cancelPayment);
+  // click outside cart-panel closes it
+  document.addEventListener('click', function onDocClick(e) {
+    const panel = document.getElementById('cart-panel');
+    if (panel.classList.contains('hidden')) return;
+    // Use composedPath to determine whether the click started inside the panel or view-cart button.
+    const path = (e.composedPath && e.composedPath()) || (function(){
+      const arr = []; let n = e.target; while(n){ arr.push(n); n = n.parentNode; } return arr;
+    })();
+    if (path.includes(panel) || path.some(n=> n && n.id === 'view-cart')) return;
+    panel.classList.add('hidden');
+  });
+  // initialize cart buttons state
+  renderCartCount();
 });
