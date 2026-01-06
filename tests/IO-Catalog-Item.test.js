@@ -1,7 +1,7 @@
 const path = require('path');
-const { parseProductFile } = require('../utils/IOParser');
-const Item = require('../src/Models/Item');
-const Catalog = require('../src/Models/Catalog');
+const { parseProductFile } = require('../src/utils/IOParser');
+const Item = require('../src/models/Item');
+const Catalog = require('../src/models/Catalog');
 
 test('inventory file is parsed into a catalog correctly', () => {
     const filePath = path.join(__dirname, '..', 'data', 'inventory.txt');

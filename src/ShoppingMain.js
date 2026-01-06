@@ -1,10 +1,10 @@
 const path = require('path');
-const { parseProductFile, updateTxtFile } = require('../utils/IOParser');
-const Item = require('./Models/Item');
-const Catalog = require('./Models/Catalog');
-const RegularCustomer = require('./Models/RegularCustomer');
-const RewardsMember = require('./Models/RewardsCustomer');
-const Cart = require('./Models/Cart');
+const { parseProductFile, updateTxtFile } = require('./utils/IOParser');
+const Item = require('./models/Item');
+const Catalog = require('./models/Catalog');
+const RegularCustomer = require('./models/RegularCustomer');
+const RewardsMember = require('./models/RewardsCustomer');
+const Cart = require('./models/Cart');
 
 
 // Build the path to data/inventory.txt

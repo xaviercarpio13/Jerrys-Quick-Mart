@@ -1,4 +1,4 @@
-Milk: 16, 4.25, 3.99, exempt
+Milk: 13, 4.25, 3.99, exempt
 Large Eggs: 10, 3.25, 2.86, exempt
 Band-Aids: 19, 8.97, 7.50, exempt
 Toothpaste: 1, 8.00, 7.25, exempt

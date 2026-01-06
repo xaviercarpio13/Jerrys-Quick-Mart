@@ -1,6 +1,6 @@
-const Item = require('../src/Models/Item');
-const LineItem = require('../src/Models/LineItem');
-const Receipt = require('../src/Models/Receipt');
+const Item = require('../src/models/Item');
+const LineItem = require('../src/models/LineItem');
+const Receipt = require('../src/models/Receipt');
 
 test('Receipt computes tax only for taxable items and totals', () => {
     const milk = new Item('Milk', 10, 4.25, 3.99, 'exempt');

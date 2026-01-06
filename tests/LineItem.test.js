@@ -1,5 +1,5 @@
-const Item = require('../src/Models/Item');
-const LineItem = require('../src/Models/LineItem');
+const Item = require('../src/models/Item');
+const LineItem = require('../src/models/LineItem');
 
 test('LineItem subtotal computes unitPrice * quantity', () => {
     const item = new Item('Milk', 10, 4.25, 3.99, 'exempt');

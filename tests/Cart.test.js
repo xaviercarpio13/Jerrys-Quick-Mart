@@ -1,5 +1,5 @@
-const Item = require('../src/Models/Item');
-const Cart = require('../src/Models/Cart');
+const Item = require('../src/models/Item');
+const Cart = require('../src/models/Cart');
 
 beforeEach(() => {
     // reset singleton

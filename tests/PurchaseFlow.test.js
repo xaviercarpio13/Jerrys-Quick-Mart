@@ -1,6 +1,6 @@
-const Item = require('../src/Models/Item');
-const Catalog = require('../src/Models/Catalog');
-const Cart = require('../src/Models/Cart');
+const Item = require('../src/models/Item');
+const Catalog = require('../src/models/Catalog');
+const Cart = require('../src/models/Cart');
 
 beforeEach(() => {
     Cart._instance = undefined;

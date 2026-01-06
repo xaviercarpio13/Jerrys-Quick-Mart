@@ -1,0 +1,26 @@
+:root{
+  --bg:#f6f8fb;
+  --card:#fff;
+  --muted:#6b7280;
+  --accent:#2563eb;
+}
+*{box-sizing:border-box}
+body{font-family:Inter,system-ui,Arial,sans-serif;background:var(--bg);margin:0;color:#111}
+.site-header{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;background:linear-gradient(90deg,#fff,#f8fbff);box-shadow:0 1px 0 rgba(0,0,0,.05)}
+.site-header h1{margin:0;font-size:1.2rem}
+.customer-toggle label{margin-right:12px;color:var(--muted)}
+.container{max-width:1000px;margin:28px auto;padding:0 16px}
+.catalog{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.card{background:var(--card);padding:14px;border-radius:10px;box-shadow:0 6px 18px rgba(16,24,40,.04)}
+.card h3{margin:0 0 8px;font-size:1rem}
+.card .price{font-weight:600;color:var(--accent)}
+.card .meta{color:var(--muted);font-size:.9rem;margin-bottom:10px}
+.card button{background:var(--accent);color:#fff;padding:8px 10px;border-radius:8px;border:0;cursor:pointer}
+.panel{position:fixed;right:20px;top:80px;width:360px;background:var(--card);padding:16px;border-radius:12px;box-shadow:0 12px 30px rgba(2,6,23,.2);z-index:50}
+.hidden{display:none}
+.cart-rows .row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f2f4f6}
+.cart-actions{display:flex;justify-content:space-between;margin-top:12px}
+pre{background:#0f1724;color:#e6eef8;padding:12px;border-radius:8px;white-space:pre-wrap}
+
+input[type="number"]{width:100%;padding:8px;border-radius:6px;border:1px solid #e6eef8;margin-top:6px}
+

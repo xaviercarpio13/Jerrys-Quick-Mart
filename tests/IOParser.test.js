@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { parseProductFile } = require('../utils/IOParser');
+const { parseProductFile } = require('../src/utils/IOParser');
 
 test('IOParser parses inventory file correctly', () => {
     const testFilePath = path.join(__dirname, 'test_inventory.txt');
