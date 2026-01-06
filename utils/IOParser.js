@@ -30,5 +30,29 @@ function parseProductFile(filePath) {
         return [];
     }
 }
-module.exports = { parseProductFile };
+
+/**
+ * Rewrites a text file after a purchase.
+ * @param {string} filePath - The path to the text file.
+ * @param {Array} products - The updated array of product objects.
+ */
+function updateTxtFile(filePath, products) {
+    try {
+        const lines = products.map(item => {
+            const name = item.name;
+            const qty = typeof item.quantity !== 'undefined' ? item.quantity : (item.quantityStock || 0);
+            const regular = typeof item.regularPrice === 'number' ? item.regularPrice.toFixed(2) : item.regularPrice;
+            const member = typeof item.memberPrice === 'number' ? item.memberPrice.toFixed(2) : item.memberPrice;
+            const tax = (typeof item.taxStatus === 'string') ? item.taxStatus : String(item.taxStatus);
+            return `${name}: ${qty}, ${regular}, ${member}, ${tax}`;
+        });
+        fs.writeFileSync(filePath, lines.join('\n'), 'utf8');
+        return true;
+    } catch (error) {
+        console.error("Error updating inventory file:", error);
+        return false;
+    }
+}
+
+module.exports = { parseProductFile, updateTxtFile };
 

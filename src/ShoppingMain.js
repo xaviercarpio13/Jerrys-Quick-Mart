@@ -1,11 +1,10 @@
 const path = require('path');
-const { parseProductFile } = require('../utils/IOParser');
+const { parseProductFile, updateTxtFile } = require('../utils/IOParser');
 const Item = require('./Models/Item');
 const Catalog = require('./Models/Catalog');
 const RegularCustomer = require('./Models/RegularCustomer');
 const RewardsMember = require('./Models/RewardsCustomer');
 const Cart = require('./Models/Cart');
-const LineItem = require('./Models/LineItem');
 
 
 // Build the path to data/inventory.txt
@@ -71,8 +70,42 @@ console.log(`Subtotal (no tax): $${cartInstance.calculateSubtotal().toFixed(2)}`
 const receipt = cartInstance.goToCheckout();
 console.log('\n' + receipt.generateReceipt());
 
+updateAndReloadStock(cartInstance.items, items);
 
 function purchase(itemIndex, qty) {
     const product = catalog.items[itemIndex];
-    cart.addItem(product, qty, product.regularPrice); 
+    if (!product) {
+        console.log(`Purchase failed: invalid product index ${itemIndex}`);
+        return false;
+    }
+    // Delegate stock validation to Cart.addItem (single source of truth)
+    const success = cart.addItem(product, qty, product.regularPrice);
+    if (success) {
+        // reserve stock in master catalog
+        const available = typeof product.quantity === 'number' ? product.quantity : 0;
+        product.quantity = Math.max(0, available - qty);
+        console.log(`Added ${qty} x ${product.name} to cart. Remaining stock: ${product.quantity}`);
+        return true;
+    }
+    console.log(`Purchase blocked: insufficient stock for ${product.name} (requested ${qty})`);
+    return false;
+}
+
+
+/**
+ * @param {Array} cartItems
+ * @param {Array} masterItems
+ */
+function updateAndReloadStock(cartItems, masterItems) {
+    cartItems.forEach(lineItem => {
+        const originalItem = masterItems.find(item => item.name === lineItem.item.name);
+        if (originalItem) {
+            console.log(`Inventory Sync: ${originalItem.name} stock is now ${originalItem.quantity}`);
+        }
+    });
+    const success = updateTxtFile(inventoryPath, masterItems);
+
+    if (success) {
+        console.log("File system updated successfully.");
+    }
 }

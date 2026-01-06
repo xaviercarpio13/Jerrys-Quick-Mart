@@ -19,11 +19,30 @@ class Cart {
         return Cart._instance;
     }
 
+    // create the singleton Cart with initial raw item params if not already created.
+    // If a Cart already exists, this will add the passed item to the existing cart.
+    static createInstance(item, quantity = 1, unitPrice = null) {
+        if (!Cart._instance) {
+            Cart._instance = new Cart(item, quantity, unitPrice);
+            return Cart._instance;
+        }
+        // already exists -> add to it
+        Cart._instance.addItem(item, quantity, unitPrice);
+        return Cart._instance;
+    }
+
     addItem(item, quantity = 1, unitPrice = null) {
         if (!item) return false;
+        // validate stock if the item carries a quantity field
+        const available = typeof item.quantity === 'number' ? item.quantity : Infinity;
+        if (available < quantity) return false;
+
         const existing = this.items.find(li => li.item.name === item.name);
         if (existing) {
-            existing.quantity += Number(quantity);
+            // check combined quantity against stock
+            const combined = existing.quantity + Number(quantity);
+            if (combined > available) return false;
+            existing.quantity = combined;
             return true;
         }
         const li = new LineItem(item, quantity, unitPrice);
@@ -43,12 +62,10 @@ class Cart {
         return true;
     }
 
-    // subtotal without tax
     calculateSubtotal() {
         return this.items.reduce((sum, li) => sum + li.subtotal(), 0);
     }
 
-    // create a light receipt object; actual tax calculation happens in Receipt
     goToCheckout(customer = null) {
         const Receipt = require('./Receipt');
         return new Receipt(this.items.slice(), customer);

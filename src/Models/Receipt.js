@@ -1,6 +1,5 @@
 class Receipt {
     constructor(lineItems = [], customer = null, taxRate = 0.065) {
-        // lineItems expected to be array of LineItem instances
         this.lineItems = lineItems.map(li => ({
             name: li.item.name,
             quantity: li.quantity,
@@ -18,7 +17,6 @@ class Receipt {
         return this.lineItems.reduce((s, it) => s + it.subtotal, 0);
     }
 
-    // TAX is sum of (line.subtotal * taxRate) only for taxable items
     calculateTax() {
         let TAX = 0;
         this.lineItems.forEach(it => {

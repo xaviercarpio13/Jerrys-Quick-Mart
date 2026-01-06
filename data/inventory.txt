@@ -1,10 +1,10 @@
-Milk: 1, 4.25, 3.99, EXEMPT
-Large Eggs: 3, 3.25, 2.86, EXEMPT
-Band-Aids: 9, 8.97, 7.50, EXEMPT
-Toothpaste: 10, 8.00, 7.25, EXEMPT
-Sunscreen: 12, 14.50, 12.95, EXEMPT
-Shampoo: 4, 6.50, 5.75, TAXABLE
-Deodorant: 3, 5.99, 4.99, TAXABLE
-Mouthwash: 10, 7.50, 6.80, EXEMPT
-Dental Floss: 2, 3.99, 3.25, EXEMPT
-Adhesive Tape: 0, 4.50, 3.95, EXEMPT
+Milk: 16, 4.25, 3.99, exempt
+Large Eggs: 10, 3.25, 2.86, exempt
+Band-Aids: 19, 8.97, 7.50, exempt
+Toothpaste: 1, 8.00, 7.25, exempt
+Sunscreen: 5, 14.50, 12.95, exempt
+Shampoo: 11, 6.50, 5.75, taxable
+Deodorant: 0, 5.99, 4.99, taxable
+Mouthwash: 4, 7.50, 6.80, exempt
+Dental Floss: 3, 3.99, 3.25, exempt
+Adhesive Tape: 2, 4.50, 3.95, exempt
