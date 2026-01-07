@@ -1,6 +1,6 @@
 // tests/Item.test.js
 
-const Item = require('../src/Models/Item');
+const Item = require('../src/models/Item');
 
 test('Item stores constructor values correctly', () => {
     const item = new Item(
