@@ -7,5 +7,5 @@ test('LineItem subtotal computes unitPrice * quantity', () => {
     expect(li.item.name).toBe('Milk');
     expect(li.quantity).toBe(2);
     expect(li.unitPrice).toBeCloseTo(4.25);
-    expect(li.subtotal()).toBeCloseTo(8.5);
+    expect(li.getSubtotal()).toBeCloseTo(8.5);
 });

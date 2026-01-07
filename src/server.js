@@ -2,12 +2,15 @@ const http = require('http');
 const path = require('path');
 const { parseProductFile, updateTxtFile, printIntoTxt } = require('./utils/IOParser');
 const Receipt = require('./models/Receipt');
+const Item = require('./models/Item');
+const Cart = require('./models/Cart');
 
 const inventoryPath = path.join(__dirname, '..', 'data', 'inventory.txt');
 
 const server = http.createServer((req, res) => {
   if (req.method === 'GET' && req.url === '/api/catalog') {
-    const products = parseProductFile(inventoryPath).map(p => ({
+    const raw = parseProductFile(inventoryPath);
+    const products = raw.map(p => ({
       name: p.item,
       quantity: p.quantity,
       regularPrice: p.regularPrice,
@@ -25,67 +28,42 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       try {
         const data = JSON.parse(body);
-        const cart = data.cart || [];
+        const cartRequest = data.cart || [];
         const commit = Boolean(data.commit);
-        const products = parseProductFile(inventoryPath).map(p => ({
-          name: p.item,
-          quantity: p.quantity,
-          regularPrice: p.regularPrice,
-          memberPrice: p.memberPrice,
-          taxStatus: p.taxStatus
-        }));
-
-        for (const ci of cart) {
+        const products = parseProductFile(inventoryPath).map(p => new Item(p.item, p.quantity, p.regularPrice, p.memberPrice, p.taxStatus));
+        const cartModel = new Cart();
+        for (const ci of cartRequest) {
           const prod = products.find(p => p.name === ci.name);
           if (!prod) {
             res.writeHead(400, {'Content-Type':'application/json'});
             res.end(JSON.stringify({ error: `Product ${ci.name} not found` }));
             return;
           }
-          if (prod.quantity < ci.quantity) {
+          const price = data.customerType === 'rewards' ? prod.memberPrice : prod.regularPrice;
+          const added = cartModel.addItem(prod, ci.quantity, price, prod.regularPrice);
+          if (!added) {
             res.writeHead(400, {'Content-Type':'application/json'});
             res.end(JSON.stringify({ error: `Insufficient stock for ${ci.name}` }));
             return;
           }
         }
-
-        const subtotal = cart.reduce((s,ci)=>{
-          const prod = products.find(p=>p.name===ci.name);
-          const price = data.customerType==='rewards' ? prod.memberPrice : prod.regularPrice;
-          return s + price * ci.quantity;
-        },0);
-        const TAX = cart.reduce((s,ci)=>{
-          const prod = products.find(p=>p.name===ci.name);
-          const price = data.customerType==='rewards' ? prod.memberPrice : prod.regularPrice;
-          const taxable = (typeof prod.taxStatus==='string') ? prod.taxStatus.toLowerCase().includes('taxable') : Boolean(prod.taxStatus);
-          return s + (taxable ? price * ci.quantity * 0.065 : 0);
-        },0);
-        const total = subtotal + TAX;
+        const previewReceipt = cartModel.goToCheckout(); 
+        const subtotal = previewReceipt.calculateSubtotal();
+        const TAX = previewReceipt.calculateTax();
+        const total = previewReceipt.calculateTotal();
 
         if (commit) {
-          const lineItems = cart.map(ci => {
-            const prod = products.find(p => p.name === ci.name);
-            const price = data.customerType === 'rewards' ? prod.memberPrice : prod.regularPrice;
-            return {
-              item: { name: prod.name, regularPrice: prod.regularPrice, memberPrice: prod.memberPrice, taxStatus: prod.taxStatus },
-              quantity: ci.quantity,
-              unitPrice: price,
-              regularPrice: prod.regularPrice
-            };
-          });
-
           if (typeof data.cash !== 'undefined') {
-            const receipt = new Receipt(lineItems, data.cash);
-            const totalFromReceipt = receipt.calculateTotal();
-            if (Number(data.cash) < totalFromReceipt) {
+            const finalReceipt = cartModel.goToCheckout(data.cash);
+            if (!finalReceipt) {
               res.writeHead(400, {'Content-Type':'application/json'});
               res.end(JSON.stringify({ error: 'Insufficient cash for total' }));
               return;
             }
 
-            for (const ci of cart) {
-              const prod = products.find(p => p.name === ci.name);
-              prod.quantity = Math.max(0, prod.quantity - ci.quantity);
+            for (const li of finalReceipt.lineItems) {
+              const prod = products.find(p => p.name === li.name);
+              if (prod) prod.quantity = Math.max(0, prod.quantity - li.quantity);
             }
             const ok = updateTxtFile(inventoryPath, products);
             if (!ok) {
@@ -95,13 +73,14 @@ const server = http.createServer((req, res) => {
             }
 
             res.writeHead(200, {'Content-Type':'application/json'});
-            res.end(JSON.stringify({ receipt: receipt.generateReceipt(), transId: receipt.transId, date: receipt.date.toISOString(), subtotal, tax: TAX, total: totalFromReceipt, committed: true }));
+            res.end(JSON.stringify({ receipt: finalReceipt.generateReceipt(), transId: finalReceipt.transId, date: finalReceipt.date.toISOString(), subtotal, tax: TAX, total: finalReceipt.calculateTotal(), committed: true }));
             return;
           }
 
-          for (const ci of cart) {
-            const prod = products.find(p => p.name === ci.name);
-            prod.quantity = Math.max(0, prod.quantity - ci.quantity);
+          // commit requested without cash (non-cash flow) — persist inventory based on cartModel.items
+          for (const li of cartModel.items) {
+            const prod = products.find(p => p.name === li.item.name);
+            if (prod) prod.quantity = Math.max(0, prod.quantity - li.quantity);
           }
           const ok = updateTxtFile(inventoryPath, products);
           if (!ok) {
@@ -111,7 +90,6 @@ const server = http.createServer((req, res) => {
           }
         }
 
-        // default response: totals only (no commit or preview)
         res.writeHead(200, {'Content-Type':'application/json'});
         res.end(JSON.stringify({ subtotal, tax: TAX, total, committed: commit }));
       } catch (err) {

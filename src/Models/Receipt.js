@@ -37,7 +37,7 @@ class Receipt {
         return subtotal + TAX;
     }
 
-    generateReceipt() {
+    generateReceipt(includePayment = true) {
         const lines = [];
         lines.push(`Date: ${this.date.toISOString()}`);
         lines.push(`Transaction: ${this.transId}`);
@@ -49,8 +49,6 @@ class Receipt {
             'TOTAL'
         );
 
-
-        // Format each line item
         this.lineItems.forEach(it => {
             const total = it.subtotal.toFixed(2);
             const unit = it.unitPrice.toFixed(2);
@@ -71,20 +69,22 @@ class Receipt {
         lines.push(`Subtotal: $${subtotal.toFixed(2)}`);
         lines.push(`Tax (6.5%): $${TAX.toFixed(2)}`);
         lines.push(`Total: $${total.toFixed(2)}`);
-        lines.push(`Cash: $${this.cash.toFixed(2)}`);
-        lines.push(`Change: $${(this.cash - total).toFixed(2)}`);
-        let totalSaved = 0;
-        this.lineItems.forEach(it => {
-            if (it.regularPrice === null) {
-                totalSaved = 0;
-            } else{
-                totalSaved += (it.regularPrice - it.unitPrice) * it.quantity;
-            }
-        });
-        lines.push(`You saved: $${totalSaved.toFixed(2)}`);
+        if (includePayment) {
+            lines.push(`Cash: $${this.cash.toFixed(2)}`);
+            lines.push(`Change: $${(this.cash - total).toFixed(2)}`);
+            let totalSaved = 0;
+            this.lineItems.forEach(it => {
+                if (it.regularPrice === null) {
+                } else {
+                    totalSaved += (it.regularPrice - it.unitPrice) * it.quantity;
+                }
+            });
+            lines.push(`You saved: $${totalSaved.toFixed(2)}`);
+        }
 
         return lines.join('\n');
     }
 }
+
 
 module.exports = Receipt;

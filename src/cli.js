@@ -85,9 +85,9 @@ async function cli() {
     }
     if (cmd === 'checkout') {
       if (!cart.items.length) { console.log('Cart is empty'); continue; }
-      const preview = cart.goToCheckout();
-      console.log('\n=== Receipt Preview ===');
-      console.log(preview.generateReceipt());
+  const preview = cart.goToCheckout();
+  console.log('\n=== Receipt Preview ===');
+  console.log(preview.generateReceipt(false));
       let cashVal = null;
       while (true) {
         const c = (await prompt('Enter cash amount (or type cancel): ')).trim();

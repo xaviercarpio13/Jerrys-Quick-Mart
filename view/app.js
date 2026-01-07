@@ -130,58 +130,82 @@ function showToast(msg, timeout = 1800) {
 }
 
 function checkout() {
-  // Ask server to validate and compute totals (no commit)
+
   fetch('/api/checkout', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ cart, customerType, commit: false })
-  }).then(r=>r.json()).then(resp=>{
+  })
+  .then(r => {
+    return r.text();
+  })
+  .then(text => {
+    try {
+      const resp = JSON.parse(text);
+      return resp;
+    } catch (e) {
+      console.error("JSON PARSE FAILED!", e);
+      throw e;   // force into catch block
+    }
+  })
+  .then(resp => {
+
     if (resp.error) {
       alert(resp.error);
       return;
     }
-    // populate payment panel
+
     document.getElementById('pay-subtotal').textContent = resp.subtotal.toFixed(2);
     document.getElementById('pay-tax').textContent = resp.tax.toFixed(2);
     document.getElementById('pay-total').textContent = resp.total.toFixed(2);
-    document.getElementById('pay-change').textContent = '0.00';
+
     document.getElementById('cash-given').value = '';
+
     document.getElementById('cart-panel').classList.add('hidden');
     document.getElementById('payment-panel').classList.remove('hidden');
-  }).catch(err=>{ alert('Checkout failed'); });
+
+  })
+  .catch(err => {
+
+    console.error("CHECKOUT FAILED – actual error object:");
+    console.error(err);
+
+    alert("Checkout failed – see console for details");
+  });
 }
 
 function finalizePayment() {
   const cash = parseFloat(document.getElementById('cash-given').value || '0');
-  const total = parseFloat(document.getElementById('pay-total').textContent || '0');
-  if (isNaN(cash)) return alert('Invalid cash amount');
-  if (cash < total) return alert('Not enough cash provided');
-  // commit the purchase on server
   fetch('/api/checkout', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ cart, customerType, commit: true })
-  }).then(r=>r.json()).then(resp=>{
-    if (resp.error) { alert(resp.error); return; }
+    body: JSON.stringify({ cart, customerType, cash, commit: true })
+  })
+  .then(r => r.json())
+  .then(resp => {
+
+    if (resp.error) {
+      alert(resp.error);
+      return;
+    }
+
     const change = cash - resp.total;
-    document.getElementById('pay-change').textContent = change.toFixed(2);
-    // show receipt
-    const lines = [];
-    cart.forEach(i => lines.push(`${i.name} x${i.quantity}  $${(i.unitPrice*i.quantity).toFixed(2)}`));
-    lines.push(`Subtotal: $${resp.subtotal.toFixed(2)}`);
-    lines.push(`Tax: $${resp.tax.toFixed(2)}`);
-    lines.push(`Total: $${resp.total.toFixed(2)}`);
-    lines.push(`Cash: $${cash.toFixed(2)}`);
-    lines.push(`Change: $${change.toFixed(2)}`);
-    document.getElementById('receipt-text').textContent = lines.join('\n');
+    // ----- SHOW RECEIPT PANEL -----
+    document.getElementById('receipt-text').textContent = resp.receipt;
     document.getElementById('payment-panel').classList.add('hidden');
     document.getElementById('receipt-panel').classList.remove('hidden');
-    // clear cart and refresh catalog
     cart = [];
     renderCartCount();
     loadProducts();
-  }).catch(err=>{ alert('Payment failed'); });
+
+  })
+  .catch(err => {
+    console.error("Payment failed:", err);
+    alert("Payment failed");
+  });
 }
+
+
 
 function cancelPayment() {
   document.getElementById('payment-panel').classList.add('hidden');
@@ -214,6 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('checkout').addEventListener('click', checkout);
   document.getElementById('pay-now').addEventListener('click', finalizePayment);
   document.getElementById('cancel-pay').addEventListener('click', cancelPayment);
+  document.getElementById('download-receipt').addEventListener('click', downloadReceipt);
   // click outside cart-panel closes it
   document.addEventListener('click', function onDocClick(e) {
     const panel = document.getElementById('cart-panel');
@@ -228,3 +253,65 @@ document.addEventListener('DOMContentLoaded', () => {
   // initialize cart buttons state
   renderCartCount();
 });
+
+function downloadReceipt() {
+  const receipt = document.getElementById('receipt-text').textContent;
+  if (!receipt) {
+    showToast("No receipt available");
+    return;
+  }
+  const transId = document.getElementById('receipt-panel').dataset.transId;
+  const date = document.getElementById('receipt-panel').dataset.date;
+
+  fetch('/api/printReceipt', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ receipt, transId, date })
+  })
+  .then(r => {
+    return r.json();
+  })
+  .then(resp => {
+    if (resp.error) {
+      alert(resp.error);
+      return;
+    }
+    showToast(`Saved as ${resp.fileName}`);
+    // Trigger client-side download directly from the receipt text (do not rely on /receipts URL)
+    try {
+      const blob = new Blob([receipt], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = resp.fileName || `receipt_${Date.now()}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      showToast('Receipt downloaded');
+    } catch (err) {
+      console.error('Client download failed after server save:', err);
+      alert('Download failed');
+    }
+  })
+  .catch(err => {
+    console.error("Download receipt FAILED (server save):", err);
+    // Fallback: attempt client-side download even if server save failed
+    try {
+      const blob = new Blob([receipt], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `receipt_${Date.now()}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      showToast('Receipt downloaded (local)');
+    } catch (e) {
+      console.error('Client fallback download also failed', e);
+      alert('Receipt download failed – see console');
+    }
+  });
+}
+

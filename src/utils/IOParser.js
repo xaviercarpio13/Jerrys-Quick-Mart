@@ -55,9 +55,19 @@ function updateTxtFile(filePath, products) {
 }
 
 function printIntoTxt (receiptContent, transId, date) {
+    /**
+     * Writes a receipt string into a file inside the repository `receipts/` folder.
+     * @param {string} receiptContent - The textual content of the receipt to save.
+     * @param {string|number} transId - A transaction identifier used to form the filename.
+     * @param {Date} date - The Date object used to build the date suffix on the filename.
+     * @returns {string|null} - The created file name on success, or null on failure.
+     *
+     * The file name format is: transaction_{transId}_{DDMMYYYY}.txt
+     * The function ensures the `receipts/` directory exists and writes the file synchronously.
+     */
     try {
         // Format: transaction_000001_12082016.txt
-        const dateStr = date.toLocaleDateString('en-GB').replace(/\//g, ''); // DDMMYYYY
+        const dateStr = date.toLocaleDateString('en-GB').replace(/\//g, '');
         const fileName = `transaction_${transId}_${dateStr}.txt`;
         const filePath = path.join(__dirname, '..', '..', 'receipts', fileName);
 

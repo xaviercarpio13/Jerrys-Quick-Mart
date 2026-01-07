@@ -94,11 +94,25 @@ describe('Server API', () => {
   });
 
   test('POST /api/printReceipt saves and returns filename', async () => {
-    const body = { receipt: 'TEST RECEIPT', transId: '000001', date: new Date().toISOString() };
-    const resp = await httpPost('/api/printReceipt', body);
-    expect(resp.status).toBe(200);
-    const j = JSON.parse(resp.body);
-    expect(j).toHaveProperty('fileName');
-    expect(typeof j.fileName).toBe('string');
+  // Perform a real purchase to generate a server-side receipt
+  const catResp = await httpGet('/api/catalog');
+  const products = JSON.parse(catResp.body);
+  const p = products.find(x => Number(x.quantity) > 0);
+  expect(p).toBeDefined();
+
+  const cart = [{ name: p.name, quantity: 1 }];
+  const commitResp = await httpPost('/api/checkout', { cart, customerType: 'regular', commit: true, cash: 1000 });
+  expect(commitResp.status).toBe(200);
+  const commitJson = JSON.parse(commitResp.body);
+  expect(commitJson).toHaveProperty('receipt');
+  expect(commitJson).toHaveProperty('transId');
+  expect(commitJson).toHaveProperty('date');
+
+  const body = { receipt: commitJson.receipt, transId: commitJson.transId, date: commitJson.date };
+  const resp = await httpPost('/api/printReceipt', body);
+  expect(resp.status).toBe(200);
+  const j = JSON.parse(resp.body);
+  expect(j).toHaveProperty('fileName');
+  expect(typeof j.fileName).toBe('string');
   });
 });
