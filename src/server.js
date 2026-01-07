@@ -1,6 +1,7 @@
 const http = require('http');
 const path = require('path');
-const { parseProductFile, updateTxtFile } = require('./utils/IOParser');
+const { parseProductFile, updateTxtFile, printIntoTxt } = require('./utils/IOParser');
+const Receipt = require('./models/Receipt');
 
 const inventoryPath = path.join(__dirname, '..', 'data', 'inventory.txt');
 
@@ -19,7 +20,6 @@ const server = http.createServer((req, res) => {
   }
 
   if (req.method === 'POST' && req.url === '/api/checkout') {
-    // read body
     let body = '';
     req.on('data', chunk => body += chunk);
     req.on('end', () => {
@@ -27,7 +27,6 @@ const server = http.createServer((req, res) => {
         const data = JSON.parse(body);
         const cart = data.cart || [];
         const commit = Boolean(data.commit);
-        // load current products
         const products = parseProductFile(inventoryPath).map(p => ({
           name: p.item,
           quantity: p.quantity,
@@ -36,7 +35,6 @@ const server = http.createServer((req, res) => {
           taxStatus: p.taxStatus
         }));
 
-        // validate stock
         for (const ci of cart) {
           const prod = products.find(p => p.name === ci.name);
           if (!prod) {
@@ -51,7 +49,6 @@ const server = http.createServer((req, res) => {
           }
         }
 
-        // compute totals (based on current products)
         const subtotal = cart.reduce((s,ci)=>{
           const prod = products.find(p=>p.name===ci.name);
           const price = data.customerType==='rewards' ? prod.memberPrice : prod.regularPrice;
@@ -65,13 +62,47 @@ const server = http.createServer((req, res) => {
         },0);
         const total = subtotal + TAX;
 
-        // If commit requested, update inventory and persist
         if (commit) {
+          const lineItems = cart.map(ci => {
+            const prod = products.find(p => p.name === ci.name);
+            const price = data.customerType === 'rewards' ? prod.memberPrice : prod.regularPrice;
+            return {
+              item: { name: prod.name, regularPrice: prod.regularPrice, memberPrice: prod.memberPrice, taxStatus: prod.taxStatus },
+              quantity: ci.quantity,
+              unitPrice: price,
+              regularPrice: prod.regularPrice
+            };
+          });
+
+          if (typeof data.cash !== 'undefined') {
+            const receipt = new Receipt(lineItems, data.cash);
+            const totalFromReceipt = receipt.calculateTotal();
+            if (Number(data.cash) < totalFromReceipt) {
+              res.writeHead(400, {'Content-Type':'application/json'});
+              res.end(JSON.stringify({ error: 'Insufficient cash for total' }));
+              return;
+            }
+
+            for (const ci of cart) {
+              const prod = products.find(p => p.name === ci.name);
+              prod.quantity = Math.max(0, prod.quantity - ci.quantity);
+            }
+            const ok = updateTxtFile(inventoryPath, products);
+            if (!ok) {
+              res.writeHead(500, {'Content-Type':'application/json'});
+              res.end(JSON.stringify({ error: 'Failed to update inventory' }));
+              return;
+            }
+
+            res.writeHead(200, {'Content-Type':'application/json'});
+            res.end(JSON.stringify({ receipt: receipt.generateReceipt(), transId: receipt.transId, date: receipt.date.toISOString(), subtotal, tax: TAX, total: totalFromReceipt, committed: true }));
+            return;
+          }
+
           for (const ci of cart) {
             const prod = products.find(p => p.name === ci.name);
             prod.quantity = Math.max(0, prod.quantity - ci.quantity);
           }
-
           const ok = updateTxtFile(inventoryPath, products);
           if (!ok) {
             res.writeHead(500, {'Content-Type':'application/json'});
@@ -80,6 +111,7 @@ const server = http.createServer((req, res) => {
           }
         }
 
+        // default response: totals only (no commit or preview)
         res.writeHead(200, {'Content-Type':'application/json'});
         res.end(JSON.stringify({ subtotal, tax: TAX, total, committed: commit }));
       } catch (err) {
@@ -90,7 +122,32 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // For static files under /view, serve them
+  // Print/save receipt to file
+  if (req.method === 'POST' && req.url === '/api/printReceipt') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body);
+        const receiptText = data.receipt || '';
+        const transId = data.transId || (String(Math.floor(Math.random() * 1000000)).padStart(6, '0'));
+        const date = data.date ? new Date(data.date) : new Date();
+        const fileName = printIntoTxt(receiptText, transId, date);
+        if (!fileName) {
+          res.writeHead(500, {'Content-Type':'application/json'});
+          res.end(JSON.stringify({ error: 'failed to save receipt' }));
+          return;
+        }
+        res.writeHead(200, {'Content-Type':'application/json'});
+        res.end(JSON.stringify({ fileName }));
+      } catch (err) {
+        res.writeHead(400, {'Content-Type':'application/json'});
+        res.end(JSON.stringify({ error: 'invalid body' }));
+      }
+    });
+    return;
+  }
+
   if (req.method === 'GET' && req.url.startsWith('/')) {
     const urlPath = req.url === '/' ? '/view/index.html' : `/view${req.url}`;
     const filePath = path.join(__dirname, '..', urlPath);

@@ -1,67 +1,75 @@
 <!doctype html>
 <html lang="en">
-  <head>
+
+<head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Jerry's Quick Mart</title>
     <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
+</head>
+
+<body>
     <header class="site-header">
-      <h1>Jerry's Quick Mart</h1>
-      <div class="customer-toggle">
-        <div class="customer-label">Customer Type</div>
-        <label>
-          <input type="radio" name="customer" value="regular" checked /> Regular
-        </label>
-        <label>
-          <input type="radio" name="customer" value="rewards" /> Rewards
-        </label>
-      </div>
-      <div class="cart-info">
-        <button id="view-cart">View Cart (<span id="cart-count">0</span>)</button>
-      </div>
+        <h1>Jerry's Quick Mart</h1>
+        <div class="customer-toggle">
+            <div class="customer-label">Customer Type</div>
+            <label>
+                <input type="radio" name="customer" value="regular" checked /> Regular
+            </label>
+            <label>
+                <input type="radio" name="customer" value="rewards" /> Rewards
+            </label>
+        </div>
+        <div class="cart-info">
+            <button id="view-cart" class="button">View Cart (<span id="cart-count">0</span>)</button>
+        </div>
     </header>
 
     <main class="container">
-      <section id="catalog" class="catalog"></section>
+        <section id="catalog" class="catalog"></section>
     </main>
 
     <div id="cart-panel" class="panel hidden">
-      <h2>Your Cart</h2>
-      <div id="cart-rows"></div>
-      <div class="cart-totals">
-        <div>Subtotal: $<span id="cart-subtotal">0.00</span></div>
-      </div>
-      <div class="cart-actions">
-  <button id="checkout">Checkout</button>
-  <button id="empty-cart">Empty Cart</button>
-  <button id="close-cart">Close</button>
-      </div>
+        <h2>Your Cart</h2>
+        <div id="cart-rows"></div>
+        <div class="cart-totals">
+            <div>Subtotal: $<span id="cart-subtotal">0.00</span></div>
+        </div>
+        <div class="cart-actions">
+            <button id="close-cart" class="button ghost">Close</button>
+            <button id="empty-cart" class="button danger">Empty Cart</button>
+            <button id="checkout" class="button">Checkout</button>
+
+        </div>
     </div>
 
     <div id="receipt-panel" class="panel hidden">
-      <h2>Receipt</h2>
-      <pre id="receipt-text"></pre>
-      <button id="close-receipt">Close</button>
+        <h2>Receipt</h2>
+        <pre id="receipt-text"></pre>
+        <div class="cart-actions">
+            <div style="display:flex;gap:8px;">
+                <button id="download-receipt" class="button">Download</button>
+            </div>
+            <button id="close-receipt" class="button ghost">Close</button>
+        </div>
     </div>
 
     <div id="payment-panel" class="panel hidden">
-      <h2>Payment</h2>
-      <div>Subtotal: $<span id="pay-subtotal">0.00</span></div>
-      <div>Tax: $<span id="pay-tax">0.00</span></div>
-      <div>Total: $<span id="pay-total">0.00</span></div>
-      <div style="margin-top:12px">
-        <label>Cash given: $<input id="cash-given" type="number" step="0.01" min="0" /></label>
-      </div>
-      <div style="margin-top:12px">Change: $<span id="pay-change">0.00</span></div>
-      <div class="cart-actions">
-        <button id="pay-now">Pay</button>
-        <button id="cancel-pay">Cancel</button>
-      </div>
+        <h2>Payment</h2>
+        <div>Subtotal: $<span id="pay-subtotal">0.00</span></div>
+        <div>Tax: $<span id="pay-tax">0.00</span></div>
+        <div>Total: $<span id="pay-total">0.00</span></div>
+        <div style="margin-top:12px">
+            <label>Cash given: $<input id="cash-given" type="number" step="0.01" min="0" /></label>
+        </div>
+        <div class="cart-actions">
+            <button id="pay-now" class="button">Pay</button>
+            <button id="cancel-pay" class="button ghost">Cancel</button>
+        </div>
     </div>
 
     <script src="app.js"></script>
-  <div id="toast" class="toast hidden"></div>
-  </body>
+    <div id="toast" class="toast hidden"></div>
+</body>
+
 </html>

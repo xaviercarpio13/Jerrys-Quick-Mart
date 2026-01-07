@@ -1,5 +1,5 @@
 const path = require('path');
-const { parseProductFile, updateTxtFile } = require('./utils/IOParser');
+const { parseProductFile, updateTxtFile, printIntoTxt } = require('./utils/IOParser');
 const Item = require('./models/Item');
 const Catalog = require('./models/Catalog');
 const RegularCustomer = require('./models/RegularCustomer');
@@ -64,6 +64,14 @@ if(receipt==null){
     return
 } 
 console.log('\n' + receipt.generateReceipt());
+
+// Save the receipt to receipts/ using printIntoTxt
+try {
+    const savedFile = printIntoTxt(receipt.generateReceipt(), receipt.transId, receipt.date);
+    if (savedFile) console.log(`Receipt written to receipts/${savedFile}`);
+} catch (err) {
+    console.error('Failed to save receipt via ShoppingMain:', err && err.message);
+}
 
 updateAndReloadStock(cartInstance.items, items);
 
